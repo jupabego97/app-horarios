@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de Trabajadores</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .worker-form {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        .table td {
+        height: 60px;
+        vertical-align: middle;
+    }
+    
+    .table th {
+        text-align: center;
+    }
+    
+    .bg-light {
+        cursor: pointer;
+    }
+    
+    .bg-light:hover {
+        background-color: #e9ecef !important;
+    }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4">Registro de Trabajadores</h2>
+        
+        <form action="/procesar" method="post" id="workersForm">
+            <div id="workersContainer">
+                <div class="worker-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre del Trabajador:</label>
+                            <input type="text" class="form-control" name="nombres[]" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Horas a trabajar:</label>
+                            <input type="number" class="form-control" name="horas[]" min="1" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <button type="button" class="btn btn-secondary" onclick="agregarTrabajador()">
+                    Agregar otro trabajador
+                </button>
+                <button type="submit" class="btn btn-primary">Enviar</button>
+            </div>
+        </form>
+    </div>
+    <div class="container mt-5">
+        <h2 class="mb-4">Horario Semanal</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Horario</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miércoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                        <th>Sábado</th>
+                        <th>Domingo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 9:00 - 10:00 (Solo L-V) -->
+                    <tr>
+                        <td class="fw-bold">09:00 - 11:00</td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-secondary text-white">Cerrado</td>
+                        <td class="bg-secondary text-white">Cerrado</td>
+                    </tr>
+                    <!-- 11:00 - 13:00 -->
+                    <tr>
+                        <td class="fw-bold">11:00 - 13:00</td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                    </tr>
+                    <!-- 13:00 - 15:00 -->
+                    <tr>
+                        <td class="fw-bold">13:00 - 15:00</td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                    </tr>
+                    <!-- 15:00 - 17:00 -->
+                    <tr>
+                        <td class="fw-bold">15:00 - 17:00</td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                    </tr>
+                    <!-- 17:00 - 19:00 -->
+                    <tr>
+                        <td class="fw-bold">17:00 - 19:00</td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                    </tr>
+                    <!-- 19:00 - 20:00 -->
+                    <tr>
+                        <td class="fw-bold">19:00 - 20:00</td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-light"></td>
+                        <td class="bg-secondary text-white">Cerrado</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    
+        <!-- Agregar leyenda -->
+        <div class="mt-3">
+            <h5>Horarios de atención:</h5>
+            <ul>
+                <li>Lunes a Viernes: 9:00 AM - 8:00 PM</li>
+                <li>Sábados: 10:00 AM - 8:00 PM</li>
+                <li>Domingos: 10:00 AM - 7:00 PM</li>
+            </ul>
+        </div>
+    </div>
+    
+    
+
+    <script>
+        function agregarTrabajador() {
+            const container = document.getElementById('workersContainer');
+            const nuevoTrabajador = document.createElement('div');
+            nuevoTrabajador.className = 'worker-form';
+            nuevoTrabajador.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Nombre del Trabajador:</label>
+                        <input type="text" class="form-control" name="nombres[]" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Horas a trabajar:</label>
+                        <input type="number" class="form-control" name="horas[]" min="1" required>
+                    </div>
+                </div>
+            `;
+            container.appendChild(nuevoTrabajador);
+        }
+        
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
