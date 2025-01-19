@@ -3,29 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultados</title>
+    <title>Horarios Asignados</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .table td {
+            height: 60px;
+            vertical-align: middle;
+        }
+        .table th {
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h2>Datos Recibidos</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Horas</th>
-                </tr>
-            </thead>
-            <tbody>
+        <h2>Horarios Asignados</h2>
+        
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Horario</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miércoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                        <th>Sábado</th>
+                        <th>Domingo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hora in range(9, 21) %}
+                        <tr>
+                            <td class="fw-bold">{{ hora }}:00 - {{ hora + 1 }}:00</td>
+                            {% for dia in ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
+                                <td>
+                                    {% if hora >= 10 or dia not in ['Sábado', 'Domingo'] %}
+                                        {% if hora < 20 or dia != 'Domingo' %}
+                                            {{ ', '.join(asignaciones[dia][hora]) }}
+                                        {% else %}
+                                            <span class="text-muted">Cerrado</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">Cerrado</span>
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-4">
+            <h3>Resumen por trabajador</h3>
+            <ul>
                 {% for trabajador in trabajadores %}
-                <tr>
-                    <td>{{ trabajador.nombre }}</td>
-                    <td>{{ trabajador.horas }}</td>
-                </tr>
+                    <li>{{ trabajador.nombre }}: {{ trabajador.horas }} horas asignadas</li>
                 {% endfor %}
-            </tbody>
-        </table>
-        <a href="/" class="btn btn-primary">Volver</a>
+            </ul>
+        </div>
+        
+        <div class="mt-4">
+            <a href="/" class="btn btn-primary">Volver</a>
+        </div>
     </div>
 </body>
 </html>
