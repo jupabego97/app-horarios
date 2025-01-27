@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request
-from itertools import combinations
 
 app = Flask(__name__)
 
@@ -24,55 +23,94 @@ def validar_horario(horario, trabajadores_asignados):
     # Regla por defecto: 2 trabajadores
     return len(trabajadores_asignados) >= 2
 
+def encontrar_bloque_mas_largo(dia, asignaciones, trabajador, horarios):
+    horas_dia = horarios[dia]
+    max_longitud = 0
+    inicio_max = None
+    fin_max = None
+
+    current_inicio = None
+    current_longitud = 0
+
+    for hora in horas_dia:
+        if (not validar_horario({'hora': hora, 'dia': dia}, asignaciones[dia][hora]) and
+            trabajador['nombre'] not in asignaciones[dia][hora]):
+            if current_inicio is None:
+                current_inicio = hora
+            current_longitud += 1
+        else:
+            if current_longitud > max_longitud:
+                max_longitud = current_longitud
+                inicio_max = current_inicio
+                fin_max = hora - 1 if current_inicio is not None else None
+            current_inicio = None
+            current_longitud = 0
+
+    if current_longitud > max_longitud:
+        max_longitud = current_longitud
+        inicio_max = current_inicio
+        fin_max = horas_dia[-1] if current_inicio is not None else None
+
+    return (inicio_max, fin_max, max_longitud)
+
 def distribuir_horarios(trabajadores):
     horarios = {
-        'Lunes': list(range(9, 21)),
-        'Martes': list(range(9, 21)),
-        'Miércoles': list(range(9, 21)),
-        'Jueves': list(range(9, 21)),
-        'Viernes': list(range(9, 21)),
-        'Sábado': list(range(10, 21)),
-        'Domingo': list(range(10, 20))
+        'Lunes': list(range(9, 20)),
+        'Martes': list(range(9, 20)),
+        'Miércoles': list(range(9, 20)),
+        'Jueves': list(range(9, 20)),
+        'Viernes': list(range(9, 20)),
+        'Sábado': list(range(10, 20)),
+        'Domingo': list(range(10, 19))
     }
     
     asignaciones = {dia: {hora: [] for hora in horas} 
                    for dia, horas in horarios.items()}
     
-    # Ordenar trabajadores por horas disponibles (mayor a menor)
     trabajadores.sort(key=lambda x: x['horas'], reverse=True)
     
     for trabajador in trabajadores:
         horas_asignadas = 0
-        horas_continuas = 0
-        ultimo_dia = None
-        ultima_hora = None
         
-        for dia, horas in horarios.items():
-            if horas_asignadas >= trabajador['horas']:
+        while horas_asignadas < trabajador['horas']:
+            mejor_dia = None
+            mejor_inicio = None
+            mejor_fin = None
+            mejor_longitud = 0
+            
+            for dia in horarios:
+                horas_en_dia = sum(1 for hora in horarios[dia] if trabajador['nombre'] in asignaciones[dia][hora])
+                if horas_en_dia >= 9:
+                    continue
+                
+                inicio, fin, longitud = encontrar_bloque_mas_largo(dia, asignaciones, trabajador, horarios)
+                if longitud == 0:
+                    continue
+                
+                max_possible = min(
+                    longitud,
+                    9 - horas_en_dia,
+                    trabajador['horas'] - horas_asignadas
+                )
+                
+                if max_possible > mejor_longitud:
+                    mejor_longitud = max_possible
+                    mejor_dia = dia
+                    mejor_inicio = inicio
+                    mejor_fin = inicio + max_possible - 1 if inicio is not None else None
+            
+            if mejor_dia is None:
                 break
-                
-            for hora in horas:
-                if horas_asignadas >= trabajador['horas']:
-                    break
-                    
-                # Verificar máximo 9 horas por día
-                if ultimo_dia == dia:
-                    if horas_continuas >= 9:
+            
+            if mejor_inicio is not None and mejor_fin is not None:
+                for hora in range(mejor_inicio, mejor_fin + 1):
+                    if hora not in asignaciones[mejor_dia]:
                         continue
-                    if hora != ultima_hora + 1:
-                        horas_continuas = 0
-                else:
-                    horas_continuas = 0
-                
-                # Verificar si se necesitan más trabajadores en este horario
-                trabajadores_actuales = asignaciones[dia][hora]
-                if not validar_horario({'hora': hora, 'dia': dia}, 
-                                     trabajadores_actuales):
-                    asignaciones[dia][hora].append(trabajador['nombre'])
-                    horas_asignadas += 1
-                    horas_continuas += 1
-                    ultimo_dia = dia
-                    ultima_hora = hora
+                    if trabajador['nombre'] not in asignaciones[mejor_dia][hora]:
+                        asignaciones[mejor_dia][hora].append(trabajador['nombre'])
+                        horas_asignadas += 1
+                        if horas_asignadas >= trabajador['horas']:
+                            break
     
     return asignaciones
 
@@ -95,3 +133,6 @@ def procesar():
     return render_template('resultado.html', 
                          asignaciones=asignaciones, 
                          trabajadores=trabajadores)
+
+if __name__ == "__main__":
+    app.run(debug=True)
