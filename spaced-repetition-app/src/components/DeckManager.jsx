@@ -94,26 +94,28 @@ function DeckManager({ user }) {
         
         // Cargar conteos de tarjetas
         await loadAllCardCounts(firebaseDecks);
-        
       } else {
         // Cargar desde localStorage
         console.log('DeckManager: Cargando desde localStorage...');
-        const localDecks = srs.getAllDecks();
-        setDecks(localDecks);
-        
-        // Crear datos de ejemplo si no hay mazos
-        if (localDecks.length === 0) {
+        let localDecks = srs.getAllDecks();
+        // Crear datos de ejemplo si no hay mazos y el usuario no está autenticado
+        if (localDecks.length === 0 && !user) {
           srs.createSampleData();
-          setDecks(srs.getAllDecks());
+          localDecks = srs.getAllDecks(); // Recargar después de crear datos de ejemplo
         }
+        setDecks(localDecks);
+        // Para usuarios no autenticados, los conteos se pueden derivar directamente o mediante loadAllCardCounts
+        await loadAllCardCounts(localDecks); 
       }
     } catch (error) {
       console.error('Error cargando mazos:', error);
-      // Fallback a localStorage en caso de error
+      // Si hay un error y el usuario está autenticado, no hacer fallback a localStorage.
+      // Mostrar estado vacío o mensaje de error.
       if (user) {
-        const localDecks = srs.getAllDecks();
-        setDecks(localDecks);
+        setDecks([]);
+        setDeckCardCounts({});
       }
+      // Para usuarios no autenticados, el error podría ser de srs, ya se manejaría localmente.
     } finally {
       setLoading(false);
     }
@@ -124,13 +126,16 @@ function DeckManager({ user }) {
     try {
       if (user) {
         const cards = await firebaseService.getCards(deckId);
+        const cards = await firebaseService.getCards(deckId);
         return cards;
       } else {
         const deck = srs.getDeck(deckId);
         return deck ? deck.cards : [];
       }
     } catch (error) {
-      console.error('Error cargando tarjetas:', error);
+      console.error('Error cargando tarjetas para el mazo', deckId, ':', error);
+      // Si es un usuario autenticado y falla la carga de Firebase, no hacer fallback.
+      // Simplemente devolver un array vacío o manejar el error de otra forma.
       return [];
     }
   };
@@ -179,33 +184,35 @@ function DeckManager({ user }) {
               deckId: newDeck.id,
               front: card.front,
               back: card.back,
-              tags: [...card.tags, 'generado-ia', generatedData.difficulty]
+              tags: Array.isArray(card.tags) ? [...card.tags, 'generado-ia', generatedData.difficulty] : ['generado-ia', generatedData.difficulty]
             });
           }
-        } else {
-          // Crear en localStorage
-          const newDeck = srs.createDeck(
-            generatedData.deckName, 
-            `Generado con IA sobre "${generatedData.topic}" (${generatedData.difficulty} - ${generatedData.language})`
-          );
+        } else { // User is not authenticated
+          const newDeckData = {
+            name: generatedData.deckName,
+            description: `Generado con IA sobre "${generatedData.topic}" (${generatedData.difficulty} - ${generatedData.language})`,
+            tags: ['generado-ia', generatedData.difficulty, generatedData.topic]
+          };
+          const newDeck = srs.createDeck(newDeckData.name, newDeckData.description, newDeckData.tags);
 
           generatedData.cards.forEach(card => {
             srs.createCard(
               newDeck.id,
               card.front,
               card.back,
-              [...card.tags, 'generado-ia', generatedData.difficulty]
+              Array.isArray(card.tags) ? [...card.tags, 'generado-ia', generatedData.difficulty] : ['generado-ia', generatedData.difficulty]
             );
           });
         }
       });
 
-      // Recargar mazos
-      await loadDecks();
+      // Recargar mazos y conteos
+      await loadDecks(); // Esto ya debería recargar los conteos también.
       alert(`¡Mazo "${generatedData.deckName}" creado exitosamente con ${generatedData.cards.length} tarjetas!`);
       
     } catch (error) {
       console.error('Error creando mazo con IA:', error);
+      // El syncIndicator ya maneja el estado de error visualmente.
       alert('Error al crear el mazo. Intenta nuevamente.');
     }
   };

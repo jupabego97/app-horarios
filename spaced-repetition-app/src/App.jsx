@@ -47,14 +47,32 @@ function HomePage({ user }) {
             dueCards += due.length;
           }
           
+          let userStudyStats = { studiedToday: 0, streak: 0 };
+          try {
+            const fetchedStudyStats = await firebaseService.getUserStudyStatistics();
+            if (fetchedStudyStats) {
+              userStudyStats = fetchedStudyStats;
+            }
+          } catch (err) {
+            console.error('Error cargando estadísticas de estudio del usuario:', err);
+            // userStudyStats will retain its default { studiedToday: 0, streak: 0 }
+          }
+
           setStats({ 
             totalCards, 
-            studiedToday: 0, // Por implementar
-            streak: 0, // Por implementar
-            dueCards 
+            dueCards,
+            studiedToday: userStudyStats.studiedToday,
+            streak: userStudyStats.streak
           });
         } catch (error) {
-          console.error('Error cargando estadísticas:', error);
+          console.error('Error cargando estadísticas generales:', error);
+          // Set stats with defaults if general loading fails
+          setStats({
+            totalCards: 0,
+            dueCards: 0,
+            studiedToday: 0,
+            streak: 0
+          });
         }
       } else {
         // Fallback a localStorage para usuarios no autenticados

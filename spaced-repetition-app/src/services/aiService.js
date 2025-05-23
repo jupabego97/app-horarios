@@ -2,13 +2,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 class AIService {
   constructor() {
-    // API key configurada directamente para funcionar automáticamente
-    this.apiKey = 'AIzaSyDS8DZT0UIKjn-A25m22nBS0gWicFDeyNs';
-    this.genAI = new GoogleGenerativeAI(this.apiKey);
-    this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-04-17" });
-    
-    // También guardar en localStorage para que persista
-    localStorage.setItem('gemini_api_key', this.apiKey);
+    this.apiKey = null;
+    this.genAI = null;
+    this.model = null;
+    this.loadSavedApiKey();
   }
 
   setApiKey(apiKey) {

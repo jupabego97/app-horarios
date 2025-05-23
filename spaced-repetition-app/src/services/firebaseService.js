@@ -8,9 +8,15 @@ import {
   query, 
   where, 
   orderBy,
-  Timestamp 
+  Timestamp,
+  getDocs, // Ensure getDocs is explicitly imported if not already covered by wildcard/other imports
+  query,   // Ensure query is explicitly imported
+  where,   // Ensure where is explicitly imported
+  orderBy, // Ensure orderBy is explicitly imported
+  collection // Ensure collection is explicitly imported
 } from 'firebase/firestore';
 import { db, auth } from './firebaseConfig';
+import { isToday, isSameDay, startOfDay, subDays, formatISO } from 'date-fns';
 
 class FirebaseService {
   constructor() {
@@ -20,6 +26,81 @@ class FirebaseService {
     auth.onAuthStateChanged((user) => {
       this.userId = user ? user.uid : null;
     });
+  }
+
+  // Operaciones de Historial de Estudio y Estadísticas
+  async getStudyHistory() {
+    if (!this.userId) {
+      console.warn('getStudyHistory: Usuario no autenticado');
+      return [];
+    }
+
+    try {
+      const q = query(
+        collection(db, 'studyHistory'),
+        where('userId', '==', this.userId),
+        orderBy('date', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    } catch (error) {
+      console.error('Error fetching study history:', error);
+      return []; // Opcionalmente, podría lanzar el error: throw error;
+    }
+  }
+
+  async getUserStudyStatistics() {
+    if (!this.userId) {
+      console.warn('getUserStudyStatistics: Usuario no autenticado');
+      return { studiedToday: 0, streak: 0 };
+    }
+
+    const history = await this.getStudyHistory();
+    if (!history || history.length === 0) {
+      return { studiedToday: 0, streak: 0 };
+    }
+
+    let studiedTodayCount = 0;
+    const uniqueStudyDaysUtc = new Set();
+    const nowUtc = new Date(); // Represents the current moment in UTC
+
+    // Use formatISO to get 'YYYY-MM-DD' representation in UTC
+    const todayUtcString = formatISO(nowUtc, { representation: 'date' });
+
+    history.forEach(record => {
+      if (record.date && typeof record.date.toDate === 'function') {
+        const recordDateUtc = record.date.toDate(); // JS Date object (moment in time)
+        const recordDateStringUtc = formatISO(recordDateUtc, { representation: 'date' });
+
+        if (recordDateStringUtc === todayUtcString) {
+          studiedTodayCount++;
+        }
+        uniqueStudyDaysUtc.add(recordDateStringUtc);
+      } else {
+        console.warn('Invalid record date found in study history:', record);
+      }
+    });
+    
+    let currentStreak = 0;
+    if (studiedTodayCount > 0) { // Or check: uniqueStudyDaysUtc.has(todayUtcString)
+      currentStreak = 1;
+      let N = 1;
+      while (true) {
+        const prevDayCandidate = subDays(nowUtc, N);
+        const prevDayStringUtc = formatISO(prevDayCandidate, { representation: 'date' });
+        if (uniqueStudyDaysUtc.has(prevDayStringUtc)) {
+          currentStreak++;
+          N++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return { studiedToday: studiedTodayCount, streak: currentStreak };
   }
 
   // Operaciones de Mazos
@@ -177,6 +258,9 @@ class FirebaseService {
   }
 
   // Migración desde localStorage (uso único)
+  // IMPORTANT: Ensure this method is placed correctly if it's the last one.
+  // The new methods were added before "Operaciones de Mazos" comment,
+  // so this one should remain at the end of the class or in its logical place.
   async migrateFromLocalStorage() {
     if (!this.userId) throw new Error('Usuario no autenticado');
     
