@@ -1,0 +1,12 @@
+{"users": [
+{
+  "localId": "DIYxCyhXjqO0WMDSZl5onYeERFh2",
+  "email": "juanpablobg97@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "b56slerVlYxvp9Ldq/Cd9sj8PdOCzjXRpBWCYoldFPaw3y14nVr54e5kk8y4yaLkEkm8JWtOGCU1woqijM0bvw==",
+  "salt": "J1shET4CoBjiJA==",
+  "lastSignedInAt": "1747957309112",
+  "createdAt": "1747955511237",
+  "disabled": false,
+  "providerUserInfo": []
+}]}
